@@ -1,7 +1,8 @@
 import { useState } from "react";
-import type {
-  AuthRegisterPost201Response,
-  AuthRegisterPostRequest,
+import {
+  ResponseError,
+  type AuthRegisterPost201Response,
+  type AuthRegisterPostRequest,
 } from "../api";
 import { api } from "../api/config";
 
@@ -17,29 +18,30 @@ export function useAuthRegister(): UseRegisterResult {
   const [error, setError] = useState<Error | any | null>(null);
   const [data, setData] = useState<AuthRegisterPost201Response | null>(null);
 
-  const register = ({ email, name, password }: AuthRegisterPostRequest) => {
+  const register = async ({
+    email,
+    name,
+    password,
+  }: AuthRegisterPostRequest) => {
     setLoading(true);
     setError(null);
     setData(null);
 
-    api
-      .authRegisterPost({
-        authRegisterPostRequest: {
-          email,
-          name,
-          password,
-        },
-      })
-      .then((res) => {
-        setData(res);
-      })
-      .catch((err: any) => {
-        setError(err);
-      })
-      .finally(() => {
-        setLoading(false);
+    try {
+      const res = await api.authRegisterPost({
+        authRegisterPostRequest: { email, name, password },
       });
+      setData(res);
+    } catch (err: unknown) {
+      if (err instanceof ResponseError) {
+        const body = await err.response.json();
+        setError(body);
+      } else {
+        setError(err);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
-
   return { loading, error, data, register };
 }

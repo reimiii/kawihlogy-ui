@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAuthRegister } from "../hooks/useAuthRegister";
 import { useNavigate } from "react-router";
+import { useAuthRegister } from "../hooks/useAuthRegister";
+import { getFieldErrorMessages } from "../lib/error-utils";
 
 export function Register() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,12 @@ export function Register() {
     }
   }, [data, navigate]);
 
+  const fieldLabelMap = {
+    name: "Full Name",
+    email: "Email",
+    password: "Password",
+  };
+
   return (
     <div className="max-w-md mx-auto mt-12 bg-[#f9f5d7] text-[#3c3836] p-8 rounded-xl shadow-lg border border-[#d5c4a1]">
       <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
@@ -38,7 +45,7 @@ export function Register() {
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
-            type="email"
+            type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 bg-white text-[#3c3836] border border-[#d5c4a1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d5c4a1]"
@@ -61,7 +68,16 @@ export function Register() {
           {loading ? "Register...." : "Register"}
         </button>
 
-        {error && <div className="text-red-600">{error.message}</div>}
+        {error && typeof error.message === "string" && (
+          <div className="text-red-600">{error.message}</div>
+        )}
+
+        {getFieldErrorMessages(error, fieldLabelMap).map((msg, idx) => (
+          <div key={idx} className="text-red-600">
+            {msg}
+          </div>
+        ))}
+
         {data?.accessToken && (
           <div className="text-green-600">Success. Token saved.</div>
         )}
