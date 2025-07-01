@@ -8,9 +8,6 @@ export function Layout() {
           Kawihlogy
         </Link>
         <div className="space-x-4">
-          <Link to="/journal" className="hover:underline">
-            Journals
-          </Link>
           <Link to="/login" className="hover:underline">
             Login
           </Link>
