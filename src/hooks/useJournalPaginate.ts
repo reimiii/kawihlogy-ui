@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { JournalGet200Response, JournalGetRequest } from "../api";
 import { api } from "../api/config";
+import { useAuth } from "../context/AuthContext";
 
 interface UseJournalListResult {
   data: JournalGet200Response | null;
@@ -15,6 +16,7 @@ export function useJournalList({
   const [data, setData] = useState<JournalGet200Response | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const { accessToken } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -23,7 +25,12 @@ export function useJournalList({
     setError(null);
 
     api
-      .journalGet({ page, size, userId })
+      .journalGet(
+        { page, size, userId },
+        accessToken
+          ? { headers: { Authorization: `Bearer ${accessToken}` } }
+          : undefined,
+      )
       .then((res) => {
         if (!cancelled) {
           setData(res);

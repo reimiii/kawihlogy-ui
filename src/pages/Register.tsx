@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuthRegister } from "../hooks/useAuthRegister";
 import { getFieldErrorMessages } from "../lib/error-utils";
+import { useAuth } from "../context/AuthContext";
 
 export function Register() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export function Register() {
   const [password, setPassword] = useState("");
 
   const { register, data, loading, error } = useAuthRegister();
+  const { setAccessToken } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -18,10 +20,10 @@ export function Register() {
 
   useEffect(() => {
     if (data?.accessToken) {
-      localStorage.setItem("accessToken", data.accessToken);
+      setAccessToken(data.accessToken);
       navigate("/");
     }
-  }, [data, navigate]);
+  }, [data, setAccessToken, navigate]);
 
   const fieldLabelMap = {
     name: "Full Name",

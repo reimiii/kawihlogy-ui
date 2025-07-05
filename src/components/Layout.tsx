@@ -1,6 +1,8 @@
-import { Outlet, Link } from "react-router";
+import { Link, Outlet } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 export function Layout() {
+  const { accessToken, logout } = useAuth();
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf1c7] text-[#3c3836] font-sans">
       <nav className="bg-[#ebdbb2] px-4 py-2 flex justify-between items-center shadow-md">
@@ -8,12 +10,25 @@ export function Layout() {
           Kawihlogy
         </Link>
         <div className="space-x-4">
-          <Link to="/login" className="hover:underline">
-            Login
-          </Link>
-          <Link to="/register" className="hover:underline">
-            Register
-          </Link>
+          {accessToken ? (
+            <>
+              <Link to="/p" className="hover:underline">
+                Profile
+              </Link>
+              <Link onClick={logout} to="/login" className="hover:underline">
+                Logout
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="hover:underline">
+                Login
+              </Link>
+              <Link to="/register" className="hover:underline">
+                Register
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
