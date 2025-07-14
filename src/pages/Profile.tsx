@@ -77,7 +77,7 @@ export function Profile() {
       </div>
 
       {/* Right Column: User's Journal List */}
-      <div className="lg:w-2/3">
+      <div className="lg:w-2/3 pr-4">
         {data?.id && <JournalList userId={data.id} />}
       </div>
     </div>
