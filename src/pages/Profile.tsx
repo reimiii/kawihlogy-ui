@@ -14,63 +14,71 @@ export function Profile() {
   }, [error, navigate]);
 
   if (loading) {
-    return <div className="text-[#3c3836] p-4">Loading profile...</div>;
+    return (
+      <div className="p-4 uppercase font-bold text-[#928374]">
+        Loading Profile...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="text-red-600 p-4">
-        Error: {error?.message ?? "Failed to load profile"} {error?.statusCode}
+      <div className="p-4 font-bold text-[#cc241d] bg-[#fbf1c7] border-4 border-[#3c3836]">
+        Error: {error?.message ?? "Failed to load profile"}
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="text-[#3c3836] p-4">
-        No profile data available. login or register
+      <div className="p-4 font-bold uppercase text-[#3c3836]">
+        No Profile Data.
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fbf1c7] text-[#3c3836] font-mono flex flex-col">
-      <div className="sticky top-0 z-10 bg-[#fbf1c7] border-b border-[#d5c4a1] px-8 py-4">
-        <h1 className="text-2xl font-bold">My Dashboard</h1>
+    <div className="flex flex-col lg:flex-row gap-8">
+      {/* Left Column: Profile Card */}
+      <div className="lg:w-1/3 flex-shrink-0">
+        <div className="bg-[#d5c4a1] border-4 border-[#3c3836] p-6 shadow-[8px_8px_0_0_#3c3836]">
+          <h1 className="text-2xl font-extrabold uppercase text-[#3c3836] border-b-4 border-[#3c3836] pb-3 mb-6">
+            User Profile
+          </h1>
+          <div className="space-y-4 text-base">
+            <div>
+              <span className="block text-[#928374] uppercase text-xs font-bold">
+                Name
+              </span>
+              <p className="font-bold text-[#3c3836] text-lg">{data.name}</p>
+            </div>
+            <div>
+              <span className="block text-[#928374] uppercase text-xs font-bold">
+                Email
+              </span>
+              <p className="font-bold text-[#3c3836] text-lg">{data.email}</p>
+            </div>
+            <div>
+              <span className="block text-[#928374] uppercase text-xs font-bold">
+                Role
+              </span>
+              <p className="font-bold text-[#3c3836] text-lg">{data.role}</p>
+            </div>
+            <div>
+              <span className="block text-[#928374] uppercase text-xs font-bold">
+                Identifier
+              </span>
+              <p className="font-mono text-sm text-[#3c3836] break-all">
+                {data.id}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto">
-        {/* Left: Profile */}
-        <div className="w-full lg:w-1/2 p-6 border-r border-[#d5c4a1]">
-          {loading && <div>Loading profile...</div>}
-          {error && <div className="text-red-600">Error: {error.message}</div>}
-          {data && (
-            <div className="bg-[#f2e5bc] border-4 border-[#d5c4a1] p-8">
-              <h2 className="text-2xl font-bold text-[#d65d0e] mb-4 border-b border-[#d5c4a1] pb-2">
-                User Profile
-              </h2>
-              <div className="space-y-3">
-                <div className="bg-[#ebdbb2] px-4 py-2 border border-[#d5c4a1] font-bold">
-                  <span className="text-[#458588]">Name:</span> {data.name}
-                </div>
-                <div className="bg-[#ebdbb2] px-4 py-2 border border-[#d5c4a1] font-bold">
-                  <span className="text-[#458588]">Email:</span> {data.email}
-                </div>
-                <div className="bg-[#ebdbb2] px-4 py-2 border border-[#d5c4a1] font-bold">
-                  <span className="text-[#458588]">/R/:</span> {data.role}
-                </div>
-                <div className="bg-[#ebdbb2] px-4 py-2 border border-[#d5c4a1] font-bold">
-                  <span className="text-[#458588]">Identifier:</span> {data.id}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Journal List */}
-        <div className="w-full lg:w-1/2 border-l border-[#d5c4a1]">
-          {data?.id && <JournalList userId={data.id} />}
-        </div>
+      {/* Right Column: User's Journal List */}
+      <div className="lg:w-2/3">
+        {data?.id && <JournalList userId={data.id} />}
       </div>
     </div>
   );

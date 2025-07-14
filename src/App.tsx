@@ -6,6 +6,9 @@ import { Register } from "./pages/Register";
 import { JournalListByUser } from "./pages/JournalListByUser";
 import { Profile } from "./pages/Profile";
 import { AuthProvider } from "./context/AuthContext";
+import { JournalDetail } from "./pages/JournalDetail";
+import NotFound from "./errors/NotFound";
+import JournalCreate from "./pages/JornalCreate";
 
 function App() {
   return (
@@ -22,10 +25,9 @@ function App() {
                 path="f/:userId/journals"
                 element={<JournalListByUser />}
               />
-              {/* <Route path="journal" element={<JournalList />} />
-            <Route path="journal/create" element={<JournalCreate />} />
-            <Route path="journal/:id" element={<JournalDetail />} />
-            <Route path="journal/:id/edit" element={<JournalEdit />} /> */}
+              <Route path="journals/:uuid" element={<JournalDetail />} />
+              <Route path="journals/create" element={<JournalCreate />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </BrowserRouter>

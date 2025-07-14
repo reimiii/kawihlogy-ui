@@ -25,54 +25,62 @@ export function Login() {
     }
   }, [data, setAccessToken, navigate]);
 
-  const fieldLabelMap = {
-    email: "Email",
-    password: "Password",
-  };
+  const fieldLabelMap = { email: "Email", password: "Password" };
+  const fieldErrors = getFieldErrorMessages(error, fieldLabelMap);
 
   return (
-    <div className="max-w-md mx-auto mt-12 bg-[#f9f5d7] text-[#3c3836] p-8 rounded-xl shadow-lg border border-[#d5c4a1]">
-      <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-      <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="max-w-md mx-auto mt-10 p-8 bg-[#d5c4a1] border-4 border-[#3c3836] shadow-[8px_8px_0_0_#3c3836]">
+      <h1 className="text-3xl font-extrabold uppercase text-[#3c3836] text-center border-b-4 border-[#3c3836] pb-4 mb-8">
+        Authenticate
+      </h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label
+            htmlFor="email"
+            className="block mb-1 font-bold text-xs uppercase text-[#928374]"
+          >
+            Email
+          </label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 bg-white text-[#3c3836] border border-[#d5c4a1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d5c4a1]"
+            className="w-full p-3 bg-[#fbf1c7] border-2 border-[#3c3836] focus:outline-none focus:border-[#458588] focus:ring-0 text-[#3c3836]"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label
+            htmlFor="password"
+            className="block mb-1 font-bold text-xs uppercase text-[#928374]"
+          >
+            Password
+          </label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 bg-white text-[#3c3836] border border-[#d5c4a1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d5c4a1]"
+            className="w-full p-3 bg-[#fbf1c7] border-2 border-[#3c3836] focus:outline-none focus:border-[#458588] focus:ring-0 text-[#3c3836]"
           />
         </div>
+
+        {error && (
+          <div className="p-3 border-2 border-[#cc241d] bg-[#fbf1c7] text-[#cc241d] font-bold space-y-1 text-sm">
+            {error.message && <p>{error.message}</p>}
+            {fieldErrors.map((msg, idx) => (
+              <p key={idx}>{msg}</p>
+            ))}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 bg-[#d5c4a1] hover:bg-[#bdae93] text-[#3c3836] font-semibold rounded-md transition"
+          className="w-full py-3 px-4 bg-[#98971a] text-[#282828] font-bold uppercase border-2 border-[#3c3836] shadow-[4px_4px_0_0_#3c3836] enabled:hover:shadow-none enabled:hover:translate-x-1 enabled:hover:translate-y-1 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Login...." : "Login"}
+          {loading ? "Verifying..." : "Login"}
         </button>
-
-        {error && typeof error.message === "string" && (
-          <div className="text-red-600">{error.message}</div>
-        )}
-
-        {getFieldErrorMessages(error, fieldLabelMap).map((msg, idx) => (
-          <div key={idx} className="text-red-600">
-            {msg}
-          </div>
-        ))}
-
-        {data?.accessToken && (
-          <div className="text-green-600">Success. Token saved.</div>
-        )}
       </form>
     </div>
   );

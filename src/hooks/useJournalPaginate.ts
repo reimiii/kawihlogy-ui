@@ -47,7 +47,7 @@ export function useJournalList({
     return () => {
       cancelled = true;
     };
-  }, [page, size, userId]);
+  }, [page, size, userId, accessToken]);
 
   return { data, loading, error };
 }
