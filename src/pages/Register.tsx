@@ -20,26 +20,12 @@ export function Register() {
       return await api.post<AuthResponse>("/auth/register", {
         name: payload.fullName,
         email: payload.email,
-        password: payload.email,
+        password: payload.password,
       });
     },
-
     onSuccess: (res) => {
       setAccessToken(res.data.accessToken);
       navigate("/");
-    },
-
-    onError: (err) => {
-      if (err instanceof ApiError) {
-        const { statusCode, message } = err.response;
-
-        console.log(statusCode, message);
-
-        if ("errors" in err.response) {
-          const fieldErrors = err.response.errors.fieldErrors;
-          console.log(fieldErrors);
-        }
-      }
     },
   });
 
