@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { JournalDetail } from "./pages/JournalDetail";
 import NotFound from "./errors/NotFound";
 import JournalCreate from "./pages/JornalCreate";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -20,14 +21,17 @@ function App() {
               <Route index element={<Home />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
-              <Route path="p" element={<Profile />} />
               <Route
                 path="f/:userId/journals"
                 element={<JournalListByUser />}
               />
-              <Route path="journals/:uuid" element={<JournalDetail />} />
-              <Route path="journals/create" element={<JournalCreate />} />
               <Route path="*" element={<NotFound />} />
+
+              <Route element={<ProtectedRoute />}>
+                <Route path="p" element={<Profile />} />
+                <Route path="journals/create" element={<JournalCreate />} />
+                <Route path="journals/:uuid" element={<JournalDetail />} />
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>

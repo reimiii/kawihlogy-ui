@@ -16,13 +16,6 @@ export function JournalDetail() {
     isInitialized && accessToken ? accessToken : "",
   );
 
-  if (!accessToken)
-    return (
-      <div className="p-4 border-4 border-[#3c3836] bg-[#d5c4a1] text-[#cc241d] font-bold uppercase">
-        Access Denied: Authentication Required.
-      </div>
-    );
-
   if (isPending)
     return (
       <div className="p-4 uppercase font-bold text-[#928374]">LOADING...</div>
