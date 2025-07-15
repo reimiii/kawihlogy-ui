@@ -1,36 +1,20 @@
 import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../api/config";
 import { useAuth } from "../context/AuthContext";
+import { useJournal } from "../hooks/useJournal";
+import { useProfile } from "../hooks/useProfile";
 
 export function JournalDetail() {
   const { uuid } = useParams<{ uuid: string }>();
-  const { accessToken } = useAuth();
+  const { accessToken, isInitialized } = useAuth();
 
-  const { data, error, isLoading } = useQuery({
-    queryKey: ["journal", uuid],
-    queryFn: () =>
-      api.journalUuidGet(
-        { uuid: uuid! },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        },
-      ),
-    enabled: !!uuid && !!accessToken,
+  const { data, error, isPending } = useJournal({
+    uuid: uuid ? uuid : "",
+    token: isInitialized && accessToken ? accessToken : "",
   });
 
-  const { data: currentUser } = useQuery({
-    queryKey: ["currentUser", accessToken],
-    queryFn: () =>
-      api.authProfileGet({
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }),
-    enabled: !!accessToken,
-  });
+  const { data: currentUser } = useProfile(
+    isInitialized && accessToken ? accessToken : "",
+  );
 
   if (!accessToken)
     return (
@@ -39,7 +23,7 @@ export function JournalDetail() {
       </div>
     );
 
-  if (isLoading)
+  if (isPending)
     return (
       <div className="p-4 uppercase font-bold text-[#928374]">LOADING...</div>
     );

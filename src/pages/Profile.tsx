@@ -1,19 +1,34 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { JournalList } from "../components/JournalList";
+import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../hooks/useProfile";
+import { ApiError } from "../lib/api.types";
 
 export function Profile() {
-  const { data, loading, error } = useProfile();
+  const { accessToken, isInitialized } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (error?.statusCode === 401) {
+    if (isInitialized && !accessToken) {
+      navigate("/login");
+    }
+  }, [isInitialized, accessToken, navigate]);
+
+  const { data, isPending, error } = useProfile(
+    isInitialized && accessToken ? accessToken : "",
+  );
+
+  useEffect(() => {
+    if (error instanceof ApiError && error.response.statusCode === 401) {
       navigate("/login");
     }
   }, [error, navigate]);
 
-  if (loading) {
+  if (!isInitialized) return null;
+  if (!accessToken) return null;
+
+  if (isPending) {
     return (
       <div className="p-4 uppercase font-bold text-[#928374]">
         Loading Profile...

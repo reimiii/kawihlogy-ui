@@ -3,6 +3,70 @@ export interface AuthResponse {
   permissions: string[]; // or a specific union if permissions are fixed
 }
 
+export interface ProfileResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FileMetadata {
+  id: string;
+  key: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  originalName: string;
+}
+
+interface PoemContent {
+  title: string;
+  stanzas: string[][];
+}
+
+interface Poem {
+  id: string;
+  content: PoemContent;
+  file: FileMetadata | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface JournalResponse {
+  id: string;
+  title: string;
+  content: string;
+  topics: string[];
+  emotions: string[];
+  date: string;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  poem: Poem | null;
+  user: User;
+}
+
+export interface JournalsResponse {
+  id: string;
+  title: string;
+  content: string;
+  topics: string[];
+  emotions: string[];
+  date: string;
+  isPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+}
+
 export interface ApiBaseError {
   statusCode: number;
   message: string;

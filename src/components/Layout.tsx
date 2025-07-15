@@ -2,8 +2,8 @@ import { Link, Outlet } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 export function Layout() {
-  const { accessToken, logout } = useAuth();
-
+  const { accessToken, logout, isInitialized } = useAuth();
+  if (!isInitialized) return null;
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf1c7] text-[#3c3836] font-mono">
       <nav className="bg-[#d5c4a1] border-b-4 border-[#3c3836] px-8 py-4 flex justify-between items-center shadow-[4px_4px_0_0_#3c3836]">
