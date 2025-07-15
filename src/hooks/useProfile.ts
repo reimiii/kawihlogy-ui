@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { ProfileResponse } from "../lib/api.types";
+import { type ProfileResponse } from "../lib/api.types";
 
 export function useProfile(accessToken: string) {
   return useQuery({

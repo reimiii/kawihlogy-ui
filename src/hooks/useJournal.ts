@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { ApiError, type JournalResponse } from "../lib/api.types";
+import { type JournalResponse } from "../lib/api.types";
 
 export function useJournal({ uuid, token }: { uuid: string; token: string }) {
   return useQuery({
@@ -12,11 +12,6 @@ export function useJournal({ uuid, token }: { uuid: string; token: string }) {
         },
       });
       return res.data;
-    },
-    retry: (failureCount, err) => {
-      if (err instanceof ApiError && err.response.statusCode === 404)
-        return false;
-      return failureCount < 3;
     },
     enabled: !!uuid && !!token,
   });

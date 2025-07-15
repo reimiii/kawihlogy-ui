@@ -54,7 +54,16 @@ export interface JournalResponse {
   user: User;
 }
 
-export interface JournalsResponse {
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  size: number;
+  lastPage: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface JournalPaginationResponse {
   id: string;
   title: string;
   content: string;
@@ -65,6 +74,11 @@ export interface JournalsResponse {
   createdAt: string;
   updatedAt: string;
   user: User;
+}
+
+export interface JournalsResponse {
+  items: JournalPaginationResponse[];
+  meta: PaginationMeta;
 }
 
 export interface ApiBaseError {
