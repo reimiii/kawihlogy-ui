@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useJournals } from "../hooks/useJournals";
 import { SkeletonBlock } from "./SkeletonBox";
+import { useAuth } from "../context/AuthContext";
 
 const EmptyState = ({
   message,
@@ -24,11 +25,14 @@ export function JournalList({ userId: propUserId }: { userId?: string }) {
   const { userId: paramUserId } = useParams<{ userId: string }>();
   const userId = propUserId || paramUserId;
 
+  const { accessToken, isInitialized } = useAuth();
+
   const [page, setPage] = useState(1);
   const { data, isPending, error } = useJournals({
     page,
     size: 5,
     uuid: userId,
+    token: isInitialized && accessToken ? accessToken : undefined,
   });
 
   if (isPending) return <SkeletonBlock />;
