@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useJournals } from "../hooks/useJournals";
+import { SkeletonBlock } from "./SkeletonBox";
 
 const EmptyState = ({
   message,
@@ -30,10 +31,7 @@ export function JournalList({ userId: propUserId }: { userId?: string }) {
     uuid: userId,
   });
 
-  if (isPending)
-    return (
-      <div className="p-4 uppercase font-bold text-[#928374]">LOADING...</div>
-    );
+  if (isPending) return <SkeletonBlock />;
 
   if (error)
     return (
@@ -86,7 +84,7 @@ export function JournalList({ userId: propUserId }: { userId?: string }) {
                   to={`/journals/${journal.id}`}
                   className="block text-xl font-extrabold text-[#b16286] hover:underline uppercase truncate"
                 >
-                  {journal.title ?? "(Untitled)"}
+                  {journal.title || "(Untitled)"}
                 </Link>
                 <p className="mt-2 text-sm text-[#3c3836] leading-relaxed whitespace-pre-wrap break-words">
                   {journal.content}
@@ -97,7 +95,7 @@ export function JournalList({ userId: propUserId }: { userId?: string }) {
                       to={`/f/${journal.user?.id}/journals`}
                       className="font-bold text-[#458588] hover:underline"
                     >
-                      {journal.user?.name ?? "Unknown"}
+                      {journal.user?.name || "Unknown"}
                     </Link>
                     <span className="text-[#928374]">
                       {new Date(

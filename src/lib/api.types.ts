@@ -1,3 +1,5 @@
+export type PickExcept<T, K extends keyof T> = Omit<T, K>;
+
 export interface AuthResponse {
   accessToken: string;
   permissions: string[]; // or a specific union if permissions are fixed

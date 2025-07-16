@@ -1,5 +1,6 @@
 import { Outlet } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { Unauthorized } from "../errors/Unauthorized";
 
 export function ProtectedRoute() {
   const { accessToken, isInitialized } = useAuth();
@@ -12,12 +13,7 @@ export function ProtectedRoute() {
     );
   }
 
-  if (!accessToken)
-    return (
-      <div className="p-4 border-4 border-[#3c3836] bg-[#d5c4a1] text-[#cc241d] font-bold uppercase">
-        Access Denied: Authentication Required.
-      </div>
-    );
+  if (!accessToken) return <Unauthorized />;
 
   return <Outlet />;
 }

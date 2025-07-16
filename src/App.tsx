@@ -10,6 +10,7 @@ import { JournalDetail } from "./pages/JournalDetail";
 import NotFound from "./errors/NotFound";
 import JournalCreate from "./pages/JornalCreate";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import JournalUpdate from "./pages/JournalUpdate";
 
 function App() {
   return (
@@ -31,6 +32,10 @@ function App() {
                 <Route path="p" element={<Profile />} />
                 <Route path="journals/create" element={<JournalCreate />} />
                 <Route path="journals/:uuid" element={<JournalDetail />} />
+                <Route
+                  path="journals/:uuid/update"
+                  element={<JournalUpdate />}
+                />
               </Route>
             </Route>
           </Routes>

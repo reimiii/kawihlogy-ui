@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { useJournal } from "../hooks/useJournal";
 import { useProfile } from "../hooks/useProfile";
+import { SkeletonBlock } from "../components/SkeletonBox";
 
 export function JournalDetail() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -16,10 +17,9 @@ export function JournalDetail() {
     isInitialized && accessToken ? accessToken : "",
   );
 
-  if (isPending)
-    return (
-      <div className="p-4 uppercase font-bold text-[#928374]">LOADING...</div>
-    );
+  if (isPending) {
+    return <SkeletonBlock />;
+  }
 
   if (error)
     return (

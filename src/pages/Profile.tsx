@@ -4,6 +4,7 @@ import { JournalList } from "../components/JournalList";
 import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../hooks/useProfile";
 import { ApiError } from "../lib/api.types";
+import { SkeletonBlock } from "../components/SkeletonBox";
 
 export function Profile() {
   const { accessToken, isInitialized } = useAuth();
@@ -29,11 +30,7 @@ export function Profile() {
   if (!accessToken) return null;
 
   if (isPending) {
-    return (
-      <div className="p-4 uppercase font-bold text-[#928374]">
-        Loading Profile...
-      </div>
-    );
+    return <SkeletonBlock />;
   }
 
   if (error) {
