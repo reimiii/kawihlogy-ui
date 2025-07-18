@@ -12,6 +12,9 @@ const queryClient = new QueryClient({
         if (error instanceof ApiError && error.response.statusCode === 401)
           return false;
 
+        if (error instanceof ApiError && error.response.statusCode === 422)
+          return false;
+
         if (error instanceof ApiError && error.response.statusCode === 404)
           return false;
 

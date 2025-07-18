@@ -38,12 +38,13 @@ export function Layout() {
               >
                 Profile
               </Link>
-              <button
+              <Link
+                to={`/login`}
                 onClick={logout}
                 className="font-bold uppercase text-[#cc241d] hover:underline"
               >
                 Logout
-              </button>
+              </Link>
             </>
           ) : (
             <>

@@ -1,19 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { BaseModal } from "../components/BaseModal";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { SkeletonBlock } from "../components/SkeletonBox";
 import { useAuth } from "../context/AuthContext";
 import { useJournal } from "../hooks/useJournal";
 import { useProfile } from "../hooks/useProfile";
 import { api } from "../lib/api";
-import type {
-  JobEvent,
-  JobProgress,
-  JoinRoomResponse,
-} from "../lib/socket.types";
 import { socket } from "../lib/socket";
-import { BaseModal } from "../components/BaseModal";
+import type { JobEvent, JobProgress } from "../lib/socket.types";
 
 export function JournalDetail() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -26,26 +22,15 @@ export function JournalDetail() {
   const [isPoemDeleteModalOpen, setPoemDeleteModalOpen] = useState(false);
 
   const [isPoemProgressModalOpen, setPoemProgressModalOpen] = useState(false);
-  const [isAudioProgressModalOpen, setAudioProgressModalOpen] = useState(false);
+  const [isPoemAudioProgressModalOpen, setPoemAudioProgressModalOpen] =
+    useState(false);
 
-  const [poemProgress, setPoemProgress] = useState<JobProgress[]>([
-    {
-      status: "idle",
-      message: "Ready to generate poem",
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [poemProgress, setPoemProgress] = useState<JobProgress[]>([]);
 
-  const [audioProgress, setAudioProgress] = useState<JobProgress[]>([
-    {
-      status: "idle",
-      message: "Ready to generate audio",
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [poemAudioProgress, setPoemAudioProgress] = useState<JobProgress[]>([]);
 
   const [poemJobId, setPoemJobId] = useState<string | null>(null);
-  const [audioJobId, setAudioJobId] = useState<string | null>(null);
+  const [poemAudioJobId, setPoemAudioJobId] = useState<string | null>(null);
 
   const [textSize, setTextSize] = useState<"text-base" | "text-lg" | "text-xl">(
     "text-lg",
@@ -102,11 +87,100 @@ export function JournalDetail() {
     onError: () => setAudioDeleteModalOpen(false),
   });
 
+  const handleDisconnect = useCallback(() => {
+    console.log("[Socket] Disconnected unexpectedly");
+  }, []);
+
   const generatePoemMutation = useMutation({
-    onMutate: () => {
-      const id = `poetry:text:${uuid}`;
-      setPoemJobId(id);
-      socket.emit("poem:join", { jobId: id });
+    onMutate: async () => {
+      const jobId = `poetry:text:${uuid}`;
+      console.log(`[onMutate] Assigned jobId: ${jobId}`);
+      setPoemJobId(jobId);
+
+      const appendPoemProgress = (
+        status: JobProgress["status"],
+        message: string,
+      ) => {
+        console.log(`[Progress] ${status.toUpperCase()}: ${message}`);
+        setPoemProgress((prev) => [
+          ...prev,
+          { status, message, timestamp: new Date().toISOString() },
+        ]);
+      };
+
+      const cleanup = () => {
+        console.log("[Cleanup] Removing listeners and disconnecting socket");
+        const events: JobEvent["type"][] = [
+          "added",
+          "active",
+          "waiting",
+          "failed",
+          "completed",
+        ];
+        socket.off(jobId, handleJoinResponse);
+        events.forEach((e) => socket.off(`job:${e}`, handleJobEvent));
+        socket.off("disconnect", handleDisconnect);
+        setPoemJobId(null);
+        if (socket.connected) {
+          socket.disconnect();
+          console.log("[Socket] Disconnected");
+        }
+      };
+
+      const handleJoinResponse = () => {
+        console.log(`[Socket] Joined room for jobId: ${jobId}`);
+        appendPoemProgress("joined", "Joined processing room");
+      };
+
+      const handleJobEvent = (eventData: JobEvent) => {
+        console.log(`[Socket] Job event received:`, eventData);
+        const messages: Record<JobEvent["type"], string> = {
+          added: "Job added to queue",
+          active: "Processing...",
+          waiting: "Job waiting in queue",
+          failed: `Job failed: ${eventData.reason || "Unknown error"}`,
+          completed: "Job completed successfully",
+        };
+
+        appendPoemProgress(eventData.type, messages[eventData.type]);
+
+        if (eventData.type === "completed") {
+          console.log("[Job] Completed. Invalidating cache and closing modal.");
+          queryClient.invalidateQueries({
+            queryKey: ["journal", uuid, accessToken],
+          });
+          setTimeout(() => {
+            setPoemProgressModalOpen(false);
+            setPoemProgress([]);
+          }, 2000);
+          cleanup();
+        }
+
+        if (eventData.type === "failed") {
+          console.log("[Job] Failed. Reason:", eventData.reason);
+          cleanup();
+        }
+      };
+
+      const events: JobEvent["type"][] = [
+        "added",
+        "active",
+        "waiting",
+        "failed",
+        "completed",
+      ];
+
+      if (!socket.connected) {
+        socket.connect();
+        console.log("[Socket] Connected");
+      }
+
+      socket.on("disconnect", handleDisconnect);
+      socket.on(jobId, handleJoinResponse);
+      events.forEach((e) => socket.on(`job:${e}`, handleJobEvent));
+      socket.emit("poem:join", { jobId });
+      console.log(`[Socket] Emitted poem:join with jobId: ${jobId}`);
+
       setPoemProgress([
         {
           status: "idle",
@@ -120,6 +194,9 @@ export function JournalDetail() {
         },
       ]);
       setPoemProgressModalOpen(true);
+      console.log("[UI] Progress modal opened");
+
+      return { cleanupListeners: cleanup };
     },
     mutationFn: async () => {
       if (!uuid) throw new Error("Missing journal ID");
@@ -130,125 +207,90 @@ export function JournalDetail() {
       );
       return response.data;
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
       setPoemProgress((prev) => [
         ...prev,
         {
           status: "failed",
-          message: `Generation failed: ${error.message}`,
+          message: `Failed to start job: ${error.message}`,
           timestamp: new Date().toISOString(),
         },
       ]);
-      setPoemProgressModalOpen(true);
+      context?.cleanupListeners();
     },
   });
 
-  const updateProgress = (
-    jobId: string,
-    event: JobEvent | JoinRoomResponse,
-    progress: JobProgress[],
-    setProgress: (progress: JobProgress[]) => void,
-    setModalOpen: (open: boolean) => void,
-    queryClient: ReturnType<typeof useQueryClient>,
-    uuid: string | undefined,
-    accessToken: string | null,
-  ) => {
-    const messages: Record<string, string> = {
-      joined: "Joined processing room",
-      added: "Job added to queue",
-      active: "Processing...",
-      waiting: "Job waiting in queue",
-      failed: `Job failed: ${(event as JobEvent).reason || "Unknown error"}`,
-      completed: "Job completed successfully",
-    };
-    setProgress([
-      ...progress,
-      {
-        status: event.type,
-        message: messages[event.type],
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-    if (event.type === "completed" || event.type === "failed") {
-      console.log("WWWWWWOOOOWWW", jobId);
-      queryClient.invalidateQueries({
-        queryKey: ["journal", uuid, accessToken],
-      });
-      setTimeout(() => {
-        setModalOpen(false);
-        // Clear progress if needed
-        setProgress([]);
-      }, 2000);
-    }
-  };
+  const generatePoemAudioMutation = useMutation({
+    onMutate: async () => {
+      if (!data?.poem?.id) return;
+      const jobId = `poetry:audio:${data.poem.id}`;
+      console.log(`[onMutate] Assigned jobId: ${jobId}`);
+      setPoemAudioJobId(jobId);
 
-  const eventMutation = useMutation({
-    mutationFn: async (
-      event: JobEvent | (JoinRoomResponse & { jobId: string }),
-    ) => event,
-    onSuccess: (event) => {
-      console.log("on success event mutate: ", JSON.stringify(event));
-      if (event.jobId === poemJobId) {
-        updateProgress(
-          poemJobId!,
-          event,
-          poemProgress,
-          setPoemProgress,
-          setPoemProgressModalOpen,
-          queryClient,
-          uuid,
-          accessToken,
-        );
-      } else if (event.jobId === audioJobId) {
-        updateProgress(
-          audioJobId!,
-          event,
-          audioProgress,
-          setAudioProgress,
-          setAudioProgressModalOpen,
-          queryClient,
-          uuid,
-          accessToken,
-        );
-      }
-    },
-  });
+      const appendPoemAudioProgress = (
+        status: JobProgress["status"],
+        message: string,
+      ) => {
+        console.log(`[Progress] ${status.toUpperCase()}: ${message}`);
+        setPoemAudioProgress((prev) => [
+          ...prev,
+          { status, message, timestamp: new Date().toISOString() },
+        ]);
+      };
 
-  useEffect(() => {
-    if (!poemJobId) return;
-    if (!socket.connected) socket.connect();
+      const cleanup = () => {
+        console.log("[Cleanup] Removing listeners and disconnecting socket");
+        const events: JobEvent["type"][] = [
+          "added",
+          "active",
+          "waiting",
+          "failed",
+          "completed",
+        ];
+        socket.off(jobId, handleJoinResponse);
+        events.forEach((e) => socket.off(`job:${e}`, handleJobEvent));
+        socket.off("disconnect", handleDisconnect);
+        setPoemAudioJobId(null);
+        if (socket.connected) {
+          socket.disconnect();
+          console.log("[Socket] Disconnected");
+        }
+      };
 
-    const handleConnect = () => {
-      console.log("socket connected", socket.id);
-    };
+      const handleJoinResponse = () => {
+        console.log(`[Socket] Joined room for jobId: ${jobId}`);
+        appendPoemAudioProgress("joined", "Joined processing room");
+      };
 
-    // Handler untuk disconnect
-    const handleDisconnect = (reason: string) => {
-      console.log("socket disconnected, reason:", reason);
+      const handleJobEvent = (eventData: JobEvent) => {
+        console.log(`[Socket] Job event received:`, eventData);
+        const messages: Record<JobEvent["type"], string> = {
+          added: "Job added to queue",
+          active: "Processing...",
+          waiting: "Job waiting in queue",
+          failed: `Job failed: ${eventData.reason || "Unknown error"}`,
+          completed: "Job completed successfully",
+        };
 
-      // Contoh: Jika disconnect karena intentional
-      if (reason === "io client disconnect") {
-        console.log("Disconnect dipanggil manual oleh client");
-      }
-    };
+        appendPoemAudioProgress(eventData.type, messages[eventData.type]);
 
-    // Pasang event listeners
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
+        if (eventData.type === "completed") {
+          console.log("[Job] Completed. Invalidating cache and closing modal.");
+          queryClient.invalidateQueries({
+            queryKey: ["journal", uuid, accessToken],
+          });
+          setTimeout(() => {
+            setPoemAudioProgressModalOpen(false);
+            setPoemAudioProgress([]);
+          }, 2000);
+          cleanup();
+        }
 
-    const jobIds = [poemJobId].filter((id): id is string => !!id);
-
-    console.log(jobIds);
-
-    jobIds.forEach((jobId) => {
-      socket.on(jobId, (data: JoinRoomResponse) => {
-        console.log("on job id", JSON.stringify(data));
-        eventMutation.mutate({ ...data, jobId });
-      });
-
-      socket.on(`job:complete`, (data: { type: string }) => {
-        console.log("complete event", data);
-      });
+        if (eventData.type === "failed") {
+          console.log("[Job] Failed. Reason:", eventData.reason);
+          cleanup();
+        }
+      };
 
       const events: JobEvent["type"][] = [
         "added",
@@ -257,41 +299,57 @@ export function JournalDetail() {
         "failed",
         "completed",
       ];
-      events.forEach((eventType) => {
-        socket.on(`job:${eventType}`, (data: JobEvent) => {
-          console.log("on job event", JSON.stringify(data));
-          eventMutation.mutate({ ...data, jobId });
-          if (eventType === "completed") {
-            console.log("COMPLETE WOI");
-            socket.off(jobId);
-            events.forEach((e) => socket.off(`job:${e}`));
-            if (jobId.includes("poetry:text:")) {
-              setPoemJobId(null);
-            } else if (jobId.includes("poetry:audio:")) {
-              setAudioJobId(null);
-            }
-            socket.disconnect();
-            console.log("JOB id", jobId);
-          }
-        });
-      });
-    });
 
-    return () => {
-      // jobIds.forEach((jobId) => {
-      //   socket.off(jobId);
-      //   const events: JobEvent["type"][] = [
-      //     "added",
-      //     "active",
-      //     "waiting",
-      //     "failed",
-      //     "completed",
-      //   ];
-      //   events.forEach((eventType) => socket.off(`job:${eventType}`));
-      // });
-      // socket.disconnect();
-    };
-  }, [poemJobId, audioJobId, eventMutation]);
+      if (!socket.connected) {
+        socket.connect();
+        console.log("[Socket] Connected");
+      }
+
+      socket.on("disconnect", handleDisconnect);
+      socket.on(jobId, handleJoinResponse);
+      events.forEach((e) => socket.on(`job:${e}`, handleJobEvent));
+      socket.emit("poem:join", { jobId });
+      console.log(`[Socket] Emitted poem:join with jobId: ${jobId}`);
+
+      setPoemAudioProgress([
+        {
+          status: "idle",
+          message: "Ready to generate poem",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          status: "added",
+          message: "Poem generation started",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      setPoemAudioProgressModalOpen(true);
+      console.log("[UI] Progress modal opened");
+
+      return { cleanupListeners: cleanup };
+    },
+    mutationFn: async () => {
+      if (!data?.poem?.id) throw new Error("Missing Poem ID");
+      const response = await api.post<{ jobId: string; state: string }>(
+        `/poem/${data.poem.id}/audio`,
+        undefined,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      return response.data;
+    },
+    onError: (error, _, context) => {
+      console.log(JSON.stringify(error));
+      setPoemAudioProgress((prev) => [
+        ...prev,
+        {
+          status: "failed",
+          message: `Failed to start job: ${error.message}`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      context?.cleanupListeners();
+    },
+  });
 
   if (isPending) {
     return <SkeletonBlock lines={10} />;
@@ -366,24 +424,23 @@ export function JournalDetail() {
           <div className="flex flex-wrap gap-4 border-4 border-[#3c3836] bg-[#d5c4a1] p-4">
             <button
               onClick={() => {
-                const isInProgress = poemProgress.some((p) =>
+                const inProgress = poemProgress.some((p) =>
                   ["added", "active", "waiting"].includes(p.status),
                 );
-
-                const isFailed = poemProgress.some(
+                const hasFailed = poemProgress.some(
                   (p) => p.status === "failed",
                 );
 
-                if (isInProgress) {
-                  console.log("masih inprogress?");
+                if (inProgress) {
                   setPoemProgressModalOpen(true);
                   return;
                 }
 
-                if (poem?.content || generatePoemMutation.isPending) return;
+                if (poem?.content || generatePoemMutation.isPending) {
+                  return;
+                }
 
-                if (poemJobId && !isFailed) {
-                  // job sedang jalan, bukan failed
+                if (poemJobId && !hasFailed) {
                   return;
                 }
 
@@ -399,10 +456,41 @@ export function JournalDetail() {
                   : "Generate Poem"}
             </button>
             <button
-              disabled={!poem?.content || !!poem?.file}
+              onClick={() => {
+                const inProgress = poemAudioProgress.some((p) =>
+                  ["added", "active", "waiting"].includes(p.status),
+                );
+                const hasFailed = poemAudioProgress.some(
+                  (p) => p.status === "failed",
+                );
+
+                if (inProgress) {
+                  setPoemAudioProgressModalOpen(true);
+                  return;
+                }
+
+                if (poem?.file?.url || generatePoemAudioMutation.isPending) {
+                  return;
+                }
+
+                if (poemAudioJobId && !hasFailed) {
+                  return;
+                }
+
+                generatePoemAudioMutation.mutate();
+              }}
+              disabled={
+                !poem?.content ||
+                !!poem?.file ||
+                generatePoemAudioMutation.isPending
+              }
               className="px-4 py-2 font-bold uppercase border-2 border-[#3c3836] bg-[#b16286] text-[#fbf1c7] shadow-[2px_2px_0_0_#3c3836] enabled:hover:shadow-none enabled:hover:translate-x-0.5 enabled:hover:translate-y-0.5 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#928374]"
             >
-              {poem?.file ? "Audio Generated" : "Generate Audio"}
+              {poem?.file
+                ? "Audio Generated"
+                : generatePoemAudioMutation.isPending
+                  ? "Generating..."
+                  : "Generate Audio"}
             </button>
 
             <div className="ml-auto flex gap-4">
@@ -549,8 +637,9 @@ export function JournalDetail() {
       <BaseModal
         isOpen={isPoemProgressModalOpen}
         onClose={() => {
-          const isFail = poemProgress.some((item) => item.status === "failed");
-          if (isFail) setPoemProgress([]);
+          if (poemProgress.some((item) => item.status === "failed")) {
+            setPoemProgress([]);
+          }
           setPoemProgressModalOpen(false);
         }}
         hideConfirm={true}
@@ -580,6 +669,40 @@ export function JournalDetail() {
         }
       />
 
+      <BaseModal
+        isOpen={isPoemAudioProgressModalOpen}
+        onClose={() => {
+          if (poemAudioProgress.some((item) => item.status === "failed")) {
+            setPoemAudioProgress([]);
+          }
+          setPoemAudioProgressModalOpen(false);
+        }}
+        hideConfirm={true}
+        title="Poem Audio Generation Progress"
+        message={
+          <div className="space-y-5">
+            {poemAudioProgress.map((item, index) => (
+              <div key={index} className="text-sm">
+                <span
+                  className={`inline-block w-24 font-medium ${
+                    item.status === "failed"
+                      ? "text-red-500"
+                      : item.status === "completed"
+                        ? "text-green-500"
+                        : ""
+                  }`}
+                >
+                  {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                </span>
+                <span>{item.message}</span>
+                <span className="text-gray-500 ml-2">
+                  ({new Date(item.timestamp).toLocaleTimeString()})
+                </span>
+              </div>
+            ))}
+          </div>
+        }
+      />
       <DeleteConfirmationModal
         isOpen={isJournalDeleteModalOpen}
         onClose={() => setJournalDeleteModalOpen(false)}
