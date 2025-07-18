@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { SkeletonBlock } from "../components/SkeletonBox";
@@ -7,6 +7,13 @@ import { useAuth } from "../context/AuthContext";
 import { useJournal } from "../hooks/useJournal";
 import { useProfile } from "../hooks/useProfile";
 import { api } from "../lib/api";
+import type {
+  JobEvent,
+  JobProgress,
+  JoinRoomResponse,
+} from "../lib/socket.types";
+import { socket } from "../lib/socket";
+import { BaseModal } from "../components/BaseModal";
 
 export function JournalDetail() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -17,6 +24,29 @@ export function JournalDetail() {
   const [isJournalDeleteModalOpen, setJournalDeleteModalOpen] = useState(false);
   const [isAudioDeleteModalOpen, setAudioDeleteModalOpen] = useState(false);
   const [isPoemDeleteModalOpen, setPoemDeleteModalOpen] = useState(false);
+
+  const [isPoemProgressModalOpen, setPoemProgressModalOpen] = useState(false);
+  const [isAudioProgressModalOpen, setAudioProgressModalOpen] = useState(false);
+
+  const [poemProgress, setPoemProgress] = useState<JobProgress[]>([
+    {
+      status: "idle",
+      message: "Ready to generate poem",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+
+  const [audioProgress, setAudioProgress] = useState<JobProgress[]>([
+    {
+      status: "idle",
+      message: "Ready to generate audio",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+
+  const [poemJobId, setPoemJobId] = useState<string | null>(null);
+  const [audioJobId, setAudioJobId] = useState<string | null>(null);
+
   const [textSize, setTextSize] = useState<"text-base" | "text-lg" | "text-xl">(
     "text-lg",
   );
@@ -72,8 +102,199 @@ export function JournalDetail() {
     onError: () => setAudioDeleteModalOpen(false),
   });
 
+  const generatePoemMutation = useMutation({
+    onMutate: () => {
+      const id = `poetry:text:${uuid}`;
+      setPoemJobId(id);
+      socket.emit("poem:join", { jobId: id });
+      setPoemProgress([
+        {
+          status: "idle",
+          message: "Ready to generate poem",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          status: "added",
+          message: "Poem generation started",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      setPoemProgressModalOpen(true);
+    },
+    mutationFn: async () => {
+      if (!uuid) throw new Error("Missing journal ID");
+      const response = await api.post<{ jobId: string; state: string }>(
+        `/poem`,
+        { journalId: uuid },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      return response.data;
+    },
+    onError: (error) => {
+      setPoemProgress((prev) => [
+        ...prev,
+        {
+          status: "failed",
+          message: `Generation failed: ${error.message}`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+      setPoemProgressModalOpen(true);
+    },
+  });
+
+  const updateProgress = (
+    jobId: string,
+    event: JobEvent | JoinRoomResponse,
+    progress: JobProgress[],
+    setProgress: (progress: JobProgress[]) => void,
+    setModalOpen: (open: boolean) => void,
+    queryClient: ReturnType<typeof useQueryClient>,
+    uuid: string | undefined,
+    accessToken: string | null,
+  ) => {
+    const messages: Record<string, string> = {
+      joined: "Joined processing room",
+      added: "Job added to queue",
+      active: "Processing...",
+      waiting: "Job waiting in queue",
+      failed: `Job failed: ${(event as JobEvent).reason || "Unknown error"}`,
+      completed: "Job completed successfully",
+    };
+    setProgress([
+      ...progress,
+      {
+        status: event.type,
+        message: messages[event.type],
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+    if (event.type === "completed" || event.type === "failed") {
+      console.log("WWWWWWOOOOWWW", jobId);
+      queryClient.invalidateQueries({
+        queryKey: ["journal", uuid, accessToken],
+      });
+      setTimeout(() => {
+        setModalOpen(false);
+        // Clear progress if needed
+        setProgress([]);
+      }, 2000);
+    }
+  };
+
+  const eventMutation = useMutation({
+    mutationFn: async (
+      event: JobEvent | (JoinRoomResponse & { jobId: string }),
+    ) => event,
+    onSuccess: (event) => {
+      console.log("on success event mutate: ", JSON.stringify(event));
+      if (event.jobId === poemJobId) {
+        updateProgress(
+          poemJobId!,
+          event,
+          poemProgress,
+          setPoemProgress,
+          setPoemProgressModalOpen,
+          queryClient,
+          uuid,
+          accessToken,
+        );
+      } else if (event.jobId === audioJobId) {
+        updateProgress(
+          audioJobId!,
+          event,
+          audioProgress,
+          setAudioProgress,
+          setAudioProgressModalOpen,
+          queryClient,
+          uuid,
+          accessToken,
+        );
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!poemJobId) return;
+    if (!socket.connected) socket.connect();
+
+    const handleConnect = () => {
+      console.log("socket connected", socket.id);
+    };
+
+    // Handler untuk disconnect
+    const handleDisconnect = (reason: string) => {
+      console.log("socket disconnected, reason:", reason);
+
+      // Contoh: Jika disconnect karena intentional
+      if (reason === "io client disconnect") {
+        console.log("Disconnect dipanggil manual oleh client");
+      }
+    };
+
+    // Pasang event listeners
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    const jobIds = [poemJobId].filter((id): id is string => !!id);
+
+    console.log(jobIds);
+
+    jobIds.forEach((jobId) => {
+      socket.on(jobId, (data: JoinRoomResponse) => {
+        console.log("on job id", JSON.stringify(data));
+        eventMutation.mutate({ ...data, jobId });
+      });
+
+      socket.on(`job:complete`, (data: { type: string }) => {
+        console.log("complete event", data);
+      });
+
+      const events: JobEvent["type"][] = [
+        "added",
+        "active",
+        "waiting",
+        "failed",
+        "completed",
+      ];
+      events.forEach((eventType) => {
+        socket.on(`job:${eventType}`, (data: JobEvent) => {
+          console.log("on job event", JSON.stringify(data));
+          eventMutation.mutate({ ...data, jobId });
+          if (eventType === "completed") {
+            console.log("COMPLETE WOI");
+            socket.off(jobId);
+            events.forEach((e) => socket.off(`job:${e}`));
+            if (jobId.includes("poetry:text:")) {
+              setPoemJobId(null);
+            } else if (jobId.includes("poetry:audio:")) {
+              setAudioJobId(null);
+            }
+            socket.disconnect();
+            console.log("JOB id", jobId);
+          }
+        });
+      });
+    });
+
+    return () => {
+      // jobIds.forEach((jobId) => {
+      //   socket.off(jobId);
+      //   const events: JobEvent["type"][] = [
+      //     "added",
+      //     "active",
+      //     "waiting",
+      //     "failed",
+      //     "completed",
+      //   ];
+      //   events.forEach((eventType) => socket.off(`job:${eventType}`));
+      // });
+      // socket.disconnect();
+    };
+  }, [poemJobId, audioJobId, eventMutation]);
+
   if (isPending) {
-    return <SkeletonBlock />;
+    return <SkeletonBlock lines={10} />;
   }
 
   if (error)
@@ -144,10 +365,38 @@ export function JournalDetail() {
         {isOwner && (
           <div className="flex flex-wrap gap-4 border-4 border-[#3c3836] bg-[#d5c4a1] p-4">
             <button
-              disabled={!!poem?.content}
+              onClick={() => {
+                const isInProgress = poemProgress.some((p) =>
+                  ["added", "active", "waiting"].includes(p.status),
+                );
+
+                const isFailed = poemProgress.some(
+                  (p) => p.status === "failed",
+                );
+
+                if (isInProgress) {
+                  console.log("masih inprogress?");
+                  setPoemProgressModalOpen(true);
+                  return;
+                }
+
+                if (poem?.content || generatePoemMutation.isPending) return;
+
+                if (poemJobId && !isFailed) {
+                  // job sedang jalan, bukan failed
+                  return;
+                }
+
+                generatePoemMutation.mutate();
+              }}
+              disabled={!!poem?.content || generatePoemMutation.isPending}
               className="px-4 py-2 font-bold uppercase border-2 border-[#3c3836] bg-[#458588] text-[#fbf1c7] shadow-[2px_2px_0_0_#3c3836] enabled:hover:shadow-none enabled:hover:translate-x-0.5 enabled:hover:translate-y-0.5 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#928374]"
             >
-              {poem?.content ? "Poem Generated" : "Generate Poem"}
+              {poem?.content
+                ? "Poem Generated"
+                : generatePoemMutation.isPending
+                  ? "Generating..."
+                  : "Generate Poem"}
             </button>
             <button
               disabled={!poem?.content || !!poem?.file}
@@ -296,6 +545,40 @@ export function JournalDetail() {
           </>
         )}
       </div>
+      {/* Poem Progress Modal */}
+      <BaseModal
+        isOpen={isPoemProgressModalOpen}
+        onClose={() => {
+          const isFail = poemProgress.some((item) => item.status === "failed");
+          if (isFail) setPoemProgress([]);
+          setPoemProgressModalOpen(false);
+        }}
+        hideConfirm={true}
+        title="Poem Generation Progress"
+        message={
+          <div className="space-y-2">
+            {poemProgress.map((item, index) => (
+              <div key={index} className="text-sm">
+                <span
+                  className={`inline-block w-24 font-medium ${
+                    item.status === "failed"
+                      ? "text-red-500"
+                      : item.status === "completed"
+                        ? "text-green-500"
+                        : ""
+                  }`}
+                >
+                  {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                </span>
+                <span>{item.message}</span>
+                <span className="text-gray-500 ml-2">
+                  ({new Date(item.timestamp).toLocaleTimeString()})
+                </span>
+              </div>
+            ))}
+          </div>
+        }
+      />
 
       <DeleteConfirmationModal
         isOpen={isJournalDeleteModalOpen}
