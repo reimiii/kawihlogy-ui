@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { BaseModal } from "../components/BaseModal";
@@ -104,7 +105,7 @@ export function JournalDetail() {
         console.log(`[Progress] ${status.toUpperCase()}: ${message}`);
         setPoemProgress((prev) => [
           ...prev,
-          { status, message, timestamp: new Date().toISOString() },
+          { status, message, timestamp: dayjs().toISOString() },
         ]);
       };
 
@@ -135,11 +136,11 @@ export function JournalDetail() {
       const handleJobEvent = (eventData: JobEvent) => {
         console.log(`[Socket] Job event received:`, eventData);
         const messages: Record<JobEvent["type"], string> = {
-          added: "Job added to queue",
-          active: "Processing...",
-          waiting: "Job waiting in queue",
-          failed: `Job failed: ${eventData.reason || "Unknown error"}`,
-          completed: "Job completed successfully",
+          added: "Alrighty, you’re in the line!",
+          active: "Doing the thing... almost there!",
+          waiting: "Just hang tight, your turn’s coming.",
+          failed: "Whoops, something went wrong. Try again later.",
+          completed: "Done and dusted! You’re all set.",
         };
 
         appendPoemProgress(eventData.type, messages[eventData.type]);
@@ -185,12 +186,12 @@ export function JournalDetail() {
         {
           status: "idle",
           message: "Ready to generate poem",
-          timestamp: new Date().toISOString(),
+          timestamp: dayjs().toISOString(),
         },
         {
           status: "added",
           message: "Poem generation started",
-          timestamp: new Date().toISOString(),
+          timestamp: dayjs().toISOString(),
         },
       ]);
       setPoemProgressModalOpen(true);
@@ -213,7 +214,7 @@ export function JournalDetail() {
         {
           status: "failed",
           message: `Failed to start job: ${error.message}`,
-          timestamp: new Date().toISOString(),
+          timestamp: dayjs().toISOString(),
         },
       ]);
       context?.cleanupListeners();
@@ -234,7 +235,7 @@ export function JournalDetail() {
         console.log(`[Progress] ${status.toUpperCase()}: ${message}`);
         setPoemAudioProgress((prev) => [
           ...prev,
-          { status, message, timestamp: new Date().toISOString() },
+          { status, message, timestamp: dayjs().toISOString() },
         ]);
       };
 
@@ -265,11 +266,11 @@ export function JournalDetail() {
       const handleJobEvent = (eventData: JobEvent) => {
         console.log(`[Socket] Job event received:`, eventData);
         const messages: Record<JobEvent["type"], string> = {
-          added: "Job added to queue",
-          active: "Processing...",
-          waiting: "Job waiting in queue",
-          failed: `Job failed: ${eventData.reason || "Unknown error"}`,
-          completed: "Job completed successfully",
+          added: "Alrighty, you’re in the line!",
+          active: "Doing the thing... almost there!",
+          waiting: "Just hang tight, your turn’s coming.",
+          failed: "Whoops, something went wrong. Try again later.",
+          completed: "Done and dusted! You’re all set.",
         };
 
         appendPoemAudioProgress(eventData.type, messages[eventData.type]);
@@ -314,13 +315,13 @@ export function JournalDetail() {
       setPoemAudioProgress([
         {
           status: "idle",
-          message: "Ready to generate poem",
-          timestamp: new Date().toISOString(),
+          message: "Ready to generate Poem Audio",
+          timestamp: dayjs().toISOString(),
         },
         {
           status: "added",
-          message: "Poem generation started",
-          timestamp: new Date().toISOString(),
+          message: "Poem Audio generation started",
+          timestamp: dayjs().toISOString(),
         },
       ]);
       setPoemAudioProgressModalOpen(true);
@@ -344,7 +345,7 @@ export function JournalDetail() {
         {
           status: "failed",
           message: `Failed to start job: ${error.message}`,
-          timestamp: new Date().toISOString(),
+          timestamp: dayjs().toISOString(),
         },
       ]);
       context?.cleanupListeners();
@@ -369,7 +370,8 @@ export function JournalDetail() {
       </div>
     );
 
-  const { title, content, user, date, isPrivate, poem } = data;
+  const { title, content, user, date, isPrivate, poem, createdAt, updatedAt } =
+    data;
   const isOwner = currentUser?.id === user?.id;
 
   return (
@@ -385,9 +387,24 @@ export function JournalDetail() {
           <h1 className="text-4xl font-extrabold uppercase text-[#3c3836] break-words whitespace-pre-wrap">
             {title ?? "(Untitled)"}
           </h1>
-          <div className="mt-2 pt-2 border-t-2 border-[#928374] text-xs uppercase text-[#3c3836] font-bold">
-            <span>By: {user?.name ?? "Unknown"}</span> /{" "}
-            <span>On: {new Date(date ?? "").toLocaleDateString()}</span>
+
+          <div className="mt-2 pt-2 border-t-2 border-[#928374] text-xs uppercase text-[#3c3836] font-bold flex justify-between flex-wrap gap-y-1">
+            <div>
+              By: {user?.name ?? "Unknown"} / On:{" "}
+              {dayjs(date).format("MMM D, YYYY")}
+            </div>
+            <div className="text-right">
+              Created: {dayjs(createdAt).format("MMM D, YYYY, HH:mm A")}
+              {updatedAt !== createdAt && (
+                <>
+                  {" "}
+                  / Updated:{" "}
+                  <span className="text-[#689d6a]">
+                    {dayjs(updatedAt).format("MMM D, YYYY, HH:mm A")}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -563,7 +580,7 @@ export function JournalDetail() {
             <div className="border-4 border-[#3c3836] bg-[#d5c4a1] p-4 mt-8">
               <div className="flex items-center justify-between border-b-4 border-[#928374] pb-2 mb-6">
                 <h1 className="text-2xl font-extrabold uppercase text-[#3c3836]">
-                  Generated Poem
+                  Generated Poem [{poem.content.title}]
                 </h1>
 
                 {isOwner && (
@@ -661,7 +678,7 @@ export function JournalDetail() {
                 </span>
                 <span>{item.message}</span>
                 <span className="text-gray-500 ml-2">
-                  ({new Date(item.timestamp).toLocaleTimeString()})
+                  ({dayjs(item.timestamp).format("HH:mm:ss A")})
                 </span>
               </div>
             ))}
@@ -696,7 +713,7 @@ export function JournalDetail() {
                 </span>
                 <span>{item.message}</span>
                 <span className="text-gray-500 ml-2">
-                  ({new Date(item.timestamp).toLocaleTimeString()})
+                  ({dayjs(item.timestamp).format("HH:mm:ss A")})
                 </span>
               </div>
             ))}

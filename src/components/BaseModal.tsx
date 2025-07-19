@@ -30,12 +30,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md bg-[#d5c4a1] border-4 border-[#3c3836] shadow-[12px_12px_0_0_#282828]">
-        <div className="p-6 space-y-4">
+      <div className="w-full max-w-3xl bg-[#d5c4a1] border-4 border-[#3c3836] shadow-[12px_12px_0_0_#282828] max-h-[80vh] flex flex-col">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           <h2 className="text-2xl font-black uppercase text-[#cc241d] tracking-wide">
             {title}
           </h2>
-          <div className="text-sm text-[#3c3836] space-y-2 font-mono">
+          <div className="text-sm text-[#3c3836] font-mono space-y-2">
             {message}
           </div>
         </div>

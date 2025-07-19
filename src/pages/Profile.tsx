@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../hooks/useProfile";
 import { ApiError } from "../lib/api.types";
 import { SkeletonBlock } from "../components/SkeletonBox";
+import dayjs from "dayjs";
 
 export function Profile() {
   const { accessToken, isInitialized } = useAuth();
@@ -84,12 +85,20 @@ export function Profile() {
                 {data.id}
               </p>
             </div>
+            <div>
+              <span className="block text-[#928374] uppercase text-xs font-bold">
+                Create In
+              </span>
+              <p className="font-mono text-sm text-[#3c3836] break-all">
+                {dayjs(data.createdAt).format("MMM D, YYYY, HH:mm A")}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Right Column: User's Journal List */}
-      <div className="lg:w-2/3 pr-4">
+      <div className="lg:w-2/3">
         {data?.id && <JournalList userId={data.id} />}
       </div>
     </div>

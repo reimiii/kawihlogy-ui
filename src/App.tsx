@@ -11,6 +11,7 @@ import NotFound from "./errors/NotFound";
 import JournalCreate from "./pages/JornalCreate";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import JournalUpdate from "./pages/JournalUpdate";
+import About from "./pages/About";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
+              <Route path="about" element={<About />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route

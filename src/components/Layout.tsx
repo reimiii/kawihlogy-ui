@@ -14,18 +14,18 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fbf1c7] text-[#3c3836] font-mono">
-      <nav className="bg-[#d5c4a1] border-b-4 border-[#3c3836] px-8 py-4 flex justify-between items-center shadow-[4px_4px_0_0_#3c3836]">
+      <nav className="bg-[#d5c4a1] border-b-4 border-[#3c3836] px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 shadow-[4px_4px_0_0_#3c3836]">
         <Link
           to="/"
           className="text-2xl font-extrabold uppercase text-[#3c3836]"
         >
           Kawihlogy
         </Link>
-        <div className="flex items-center space-x-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
           {accessToken && (
             <Link
               to="/journals/create"
-              className="bg-[#98971a] text-[#282828] px-4 py-2 font-bold uppercase border-2 border-[#3c3836] shadow-[2px_2px_0_0_#3c3836] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+              className="bg-[#98971a] text-[#282828] px-4 py-2 font-bold uppercase border-2 border-[#3c3836] shadow-[2px_2px_0_0_#3c3836] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-center"
             >
               New Journal
             </Link>
@@ -34,14 +34,14 @@ export function Layout() {
             <>
               <Link
                 to="/p"
-                className="font-bold uppercase text-[#3c3836] hover:text-[#458588] hover:underline"
+                className="font-bold uppercase text-[#3c3836] hover:text-[#458588] hover:underline text-center"
               >
                 Profile
               </Link>
               <Link
                 to={`/login`}
                 onClick={logout}
-                className="font-bold uppercase text-[#cc241d] hover:underline"
+                className="font-bold uppercase text-[#cc241d] hover:underline text-center"
               >
                 Logout
               </Link>
@@ -50,13 +50,13 @@ export function Layout() {
             <>
               <Link
                 to="/login"
-                className="font-bold uppercase text-[#3c3836] hover:text-[#458588] hover:underline"
+                className="font-bold uppercase text-[#3c3836] hover:text-[#458588] hover:underline text-center"
               >
                 Login
               </Link>
               <Link
                 to="/register"
-                className="font-bold uppercase text-[#3c3836] hover:text-[#b16286] hover:underline"
+                className="font-bold uppercase text-[#3c3836] hover:text-[#b16286] hover:underline text-center"
               >
                 Register
               </Link>
@@ -65,12 +65,20 @@ export function Layout() {
         </div>
       </nav>
 
-      <main className="flex-grow p-8 bg-[#fbf1c7] border-x-4 border-[#3c3836]">
+      <main className="flex-grow px-4 sm:px-8 py-6 bg-[#fbf1c7] border-x-0 sm:border-x-4 border-[#3c3836]">
         <Outlet />
       </main>
 
       <footer className="bg-[#d5c4a1] border-t-4 border-[#3c3836] text-center py-4 text-xs uppercase font-bold text-[#928374]">
-        Created by Me
+        © 2025 Kawihlogy — Created by{" "}
+        <a
+          href="https://github.com/reimiii"
+          className="underline text-[#458588]"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          reimiii
+        </a>
       </footer>
     </div>
   );
