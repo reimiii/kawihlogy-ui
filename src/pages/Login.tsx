@@ -7,8 +7,8 @@ import { api } from "../lib/api";
 
 export function Login() {
   const [form, setForm] = useState({
-    email: "",
-    password: "",
+    email: "noir@example.com",
+    password: "password",
   });
 
   const { setAccessToken } = useAuth();
