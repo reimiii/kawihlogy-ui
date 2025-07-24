@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { BaseModal } from "../components/BaseModal";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
@@ -36,6 +36,17 @@ export function JournalDetail() {
   const [textSize, setTextSize] = useState<"text-base" | "text-lg" | "text-xl">(
     "text-lg",
   );
+
+  const [isActiveDelayed, setIsActiveDelayed] = useState({
+    poem: false,
+    audio: false,
+  });
+  const [isWaitingDelayed, setIsWaitingDelayed] = useState({
+    poem: false,
+    audio: false,
+  });
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const { data, error, isPending } = useJournal({
     uuid: uuid ? uuid : "",
@@ -142,6 +153,26 @@ export function JournalDetail() {
           failed: "Whoops, something went wrong. Try again later.",
           completed: "Done and dusted! You’re all set.",
         };
+
+        if (eventData.type === "active") {
+          setIsActiveDelayed((prev) => ({ ...prev, poem: false }));
+          setTimeout(() => {
+            setIsActiveDelayed((prev) => ({ ...prev, poem: true }));
+            setIsWaitingDelayed((prev) => ({ ...prev, poem: false }));
+          }, 3000);
+        }
+
+        if (eventData.type === "waiting") {
+          setIsWaitingDelayed((prev) => ({ ...prev, poem: false }));
+          setTimeout(() => {
+            setIsWaitingDelayed((prev) => ({ ...prev, poem: true }));
+          }, 3000);
+        }
+
+        if (["completed", "failed"].includes(eventData.type)) {
+          setIsWaitingDelayed((prev) => ({ ...prev, poem: false }));
+          setIsActiveDelayed((prev) => ({ ...prev, poem: false }));
+        }
 
         appendPoemProgress(eventData.type, messages[eventData.type]);
 
@@ -272,6 +303,26 @@ export function JournalDetail() {
           failed: "Whoops, something went wrong. Try again later.",
           completed: "Done and dusted! You’re all set.",
         };
+
+        if (eventData.type === "active") {
+          setIsActiveDelayed((prev) => ({ ...prev, audio: false }));
+          setTimeout(() => {
+            setIsActiveDelayed((prev) => ({ ...prev, audio: true }));
+            setIsWaitingDelayed((prev) => ({ ...prev, audio: false }));
+          }, 5000);
+        }
+
+        if (eventData.type === "waiting") {
+          setIsWaitingDelayed((prev) => ({ ...prev, audio: false }));
+          setTimeout(() => {
+            setIsWaitingDelayed((prev) => ({ ...prev, audio: true }));
+          }, 5000);
+        }
+
+        if (["completed", "failed"].includes(eventData.type)) {
+          setIsWaitingDelayed((prev) => ({ ...prev, audio: false }));
+          setIsActiveDelayed((prev) => ({ ...prev, audio: false }));
+        }
 
         appendPoemAudioProgress(eventData.type, messages[eventData.type]);
 
@@ -602,7 +653,16 @@ export function JournalDetail() {
                     </div>
 
                     <div className="flex-1 min-w-0 flex items-center gap-4 justify-end">
-                      <audio controls className="w-full h-8">
+                      <audio
+                        ref={audioRef}
+                        controls
+                        className="w-full h-8"
+                        onLoadedMetadata={() => {
+                          if (audioRef.current) {
+                            setAudioDuration(audioRef.current.duration);
+                          }
+                        }}
+                      >
                         <source src={poem.file.url} type={poem.file.mimeType} />
                         AUDIO NOT SUPPORTED.
                       </audio>
@@ -617,6 +677,13 @@ export function JournalDetail() {
                       )}
                     </div>
                   </div>
+
+                  {isOwner && audioDuration !== null && audioDuration < 50 && (
+                    <div className="mt-2 text-xs text-red-700 font-mono">
+                      Warning: Audio may be incomplete (duration less than 50s)
+                      you may delete the audio and try generate audio again
+                    </div>
+                  )}
                 </div>
               )}
               <div
@@ -682,6 +749,25 @@ export function JournalDetail() {
                 </span>
               </div>
             ))}
+
+            {isWaitingDelayed.poem && (
+              <div className="flex items-start gap-2 text-[#d79921]">
+                <div className="w-3 h-3 bg-[#fabd2f] rounded-full mt-1 animate-pulse" />
+                <div className="text-sm text-[#3c3836]">
+                  Note: Job is still in queue. There’s only one worker handling
+                  tasks, so wait time may vary.
+                </div>
+              </div>
+            )}
+
+            {isActiveDelayed.poem && (
+              <div className="flex items-start gap-2 text-[#d79921]">
+                <div className="w-3 h-3 bg-[#fabd2f] rounded-full mt-1 animate-pulse" />
+                <div className="text-sm text-[#3c3836]">
+                  Note: Poem generation processing may take longer.
+                </div>
+              </div>
+            )}
           </div>
         }
       />
@@ -697,7 +783,7 @@ export function JournalDetail() {
         hideConfirm={true}
         title="Poem Audio Generation Progress"
         message={
-          <div className="space-y-5">
+          <div className="space-y-2">
             {poemAudioProgress.map((item, index) => (
               <div key={index} className="text-sm">
                 <span
@@ -717,6 +803,25 @@ export function JournalDetail() {
                 </span>
               </div>
             ))}
+
+            {isWaitingDelayed.audio && (
+              <div className="flex items-start gap-2 text-[#d79921]">
+                <div className="w-3 h-3 bg-[#fabd2f] rounded-full mt-1 animate-pulse" />
+                <div className="text-sm text-[#3c3836]">
+                  Note: Job is still in queue. There’s only one worker handling
+                  tasks, so wait time may vary.
+                </div>
+              </div>
+            )}
+
+            {isActiveDelayed.audio && (
+              <div className="flex items-start gap-2 text-[#d79921]">
+                <div className="w-3 h-3 bg-[#fabd2f] rounded-full mt-1 animate-pulse" />
+                <div className="text-sm text-[#3c3836]">
+                  Note: Audio generation Processing may take longer.
+                </div>
+              </div>
+            )}
           </div>
         }
       />
