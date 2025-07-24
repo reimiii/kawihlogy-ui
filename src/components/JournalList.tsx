@@ -60,13 +60,17 @@ export function JournalList({ userId: propUserId }: { userId?: string }) {
               Journals
             </h1>
             <p className="text-[#3c3836] text-sm mt-1 uppercase">
-              {userId && first ? (
-                <>
-                  Showing journals by{" "}
-                  <span className="font-bold text-[#458588]">
-                    {first.user?.name ?? "Unknown"}
-                  </span>
-                </>
+              {userId ? (
+                first ? (
+                  <>
+                    Showing journals by{" "}
+                    <span className="font-bold text-[#458588]">
+                      {first.user?.name ?? "Unknown"}
+                    </span>
+                  </>
+                ) : (
+                  <>No journals found for this user</>
+                )
               ) : (
                 <>Public journals from various users</>
               )}
