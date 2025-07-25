@@ -1,69 +1,69 @@
-# React + TypeScript + Vite
+# Kawihlogy
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A minimalist journaling web application designed for clarity, expression, and thematic exploration. Inspired by Gruvbox aesthetics and UNIX minimalism, the UI emphasizes typography, contrast, and semantic clarity. No distractions. Just journaling.
 
-Currently, two official plugins are available:
+## Core Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Journaling:** Create, view, and edit personal journal entries.
+- **Tagging:** Tag entries with **topics** and **emotions** for better organization.
+- **AI Integration:** Generate poems from your journal entries and listen to audio generated from those poems.
+- **Privacy Control:** Toggle journal entries between public and private.
+- **Community:** Browse other users' public journals.
+- **User Profiles:** Manage your user profile information.
+- **Real-time Updates:** Utilizes Socket.IO for real-time communication.
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend:**
+  - [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+  - [TypeScript](https://www.typescriptlang.org/)
+  - [Tailwind CSS](https://tailwindcss.com/)
+  - [React Router](https://reactrouter.com/) for routing.
+  - [TanStack Query](https://tanstack.com/query/latest) for data fetching and state management.
+  - [Axios](https://axios-http.com/) for HTTP requests.
+  - [Socket.IO Client](https://socket.io/docs/v4/client-api/) for real-time communication.
+- **Backend:**
+  - [NestJS](https://nestjs.com/)
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+To get a local copy up and running, follow these simple steps.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Prerequisites
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- [Node.js](https://nodejs.org/en/) (v18.x or higher)
+- [npm](https://www.npmjs.com/)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Installation
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Clone the frontend repository:
+   ```sh
+   git clone https://github.com/reimiii/kawihlogy-ui.git
+   ```
+2. Install NPM packages:
+   ```sh
+   npm install
+   ```
+3. Create a `.env` file in the root of the project and add the necessary environment variables for the backend API.
+4. Start the development server:
+   ```sh
+   npm run dev
+   ```
+
+## Available Scripts
+
+In the project directory, you can run:
+
+- `npm run dev`: Runs the app in the development mode.
+- `npm run build`: Builds the app for production.
+- `npm run lint`: Lints the codebase.
+- `npm run preview`: Serves the production build locally.
+
+## Open Source & Contact
+
+Kawihlogy is an open-source project. You can explore the source code, report issues, or contribute via GitHub. For feedback or inquiries, feel free to reach out.
+
+- **Frontend:** [https://github.com/reimiii/kawihlogy-ui](https://github.com/reimiii/kawihlogy-ui)
+- **Backend:** [https://github.com/reimiii/kawihlogy](https://github.com/reimiii/kawihlogy)
+- **Contact:** [imiia75775@gmail.com](mailto:imiia75775@gmai.com)
+- **LinkedIn:** [Hilmi Akbar Muharrom](https://www.linkedin.com/in/hilmi-akbar-muharrom/)
