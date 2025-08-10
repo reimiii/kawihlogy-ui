@@ -5,7 +5,7 @@ A minimalist journaling web application designed for clarity, expression, and th
 ## Demo
 [![Watch the Demo](./t.png)](./f.mp4)
 <video width="640" height="360" controls>
-  <source src="./f.mp4" type="video/mp4">
+  <source src="https://github.com/reimiii/kawihlogy-ui/raw/refs/heads/main/f.mp4" type="video/mp4">
 </video>
 
 ## Core Features
