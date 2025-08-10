@@ -3,7 +3,7 @@
 A minimalist journaling web application designed for clarity, expression, and thematic exploration. Inspired by Gruvbox aesthetics and UNIX minimalism, the UI emphasizes typography, contrast, and semantic clarity. No distractions. Just journaling.
 
 ## Demo
-<!--[![Watch the Demo](./t.png)](./f.mp4)-->
+[![Watch the Demo](./t.png)](./f.mp4)
 <video width="640" height="360" controls>
   <source src="./f.mp4" type="video/mp4">
 </video>
